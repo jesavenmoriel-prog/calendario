@@ -1,0 +1,2537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Exámenes · IES | Gestión Académica por Grupos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tipografía Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 10px -2px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04)',
+                        'modal': '0 20px 25px -5px rgba(15, 23, 42, 0.14), 0 8px 10px -6px rgba(15, 23, 42, 0.08)'
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        /* Barras de desplazamiento discretas */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @keyframes fadeScaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.97) translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .animate-modal {
+            animation: fadeScaleIn 0.18s ease-out forwards;
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-full {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .calendar-cell {
+                min-height: 110px !important;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- ===================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN INSTITUCIONAL SUPERIOR                            -->
+    <!-- ===================================================================== -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                
+                <!-- Marca / Volver al inicio -->
+                <button id="brand-home-btn" type="button" class="flex items-center gap-3 text-left group cursor-pointer focus:outline-none">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h1 class="text-base sm:text-xl font-extrabold tracking-tight text-white leading-tight group-hover:text-blue-200 transition-colors">
+                                Calendario de Exámenes · IES
+                            </h1>
+                            <!-- Indicador discreto de estado de guardado -->
+                            <span id="persistence-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                                💾 Guardado local
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 hidden sm:block">
+                            Coordinación docente y calendarios independientes por grupo · ESO y DIVER
+                        </p>
+                    </div>
+                </button>
+
+                <!-- Perfil del Docente -->
+                <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+                    <button id="btn-teacher-profile" type="button"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition-colors cursor-pointer"
+                        title="Guardar tu nombre de profesor/a para autorrellenar tus exámenes">
+                        <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span id="header-teacher-name" class="max-w-[140px] sm:max-w-[200px] truncate">Identificarse (Docente)</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- PANTALLA 1: DIRECTORIO DE LOS 10 GRUPOS INDEPENDIENTES                -->
+    <!-- ===================================================================== -->
+    <main id="home-screen" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+        
+        <!-- Cabecera de Bienvenida y Exportación Global -->
+        <section class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-soft flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                    Organización Académica · 10 Grupos Independientes
+                </span>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                    Selecciona un grupo para gestionar su calendario de exámenes
+                </h2>
+                <p class="text-sm text-slate-600 max-w-2xl">
+                    Cada grupo cuenta con su propio calendario mensual y agenda cronológica. Pulsa sobre cualquier grupo para consultar, programar o editar sus pruebas evaluables.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button id="btn-export-global-csv" type="button"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Exportar todos los exámenes (CSV)</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Estadísticas Globales del IES -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-label="Estadísticas globales del centro">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Exámenes este mes</p>
+                    <p id="global-stat-month" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                    <p id="global-stat-month-name" class="text-xs text-slate-500 mt-1 capitalize">En el mes actual</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total programados</p>
+                    <p id="global-stat-total" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Entre los 10 grupos</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grupos con sobrecarga</p>
+                    <p id="global-stat-alerts" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Con días de 2+ exámenes</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Esta semana (IES)</p>
+                    <p id="global-stat-week" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Lunes a domingo actual</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cuadrícula de los 10 Grupos Organizados por Niveles -->
+        <section id="groups-directory-container" class="space-y-8" aria-label="Directorio de grupos del instituto">
+            <!-- Renderizado dinámicamente por JS -->
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- PANTALLA 2: CALENDARIO INDEPENDIENTE DEL GRUPO SELECCIONADO           -->
+    <!-- ===================================================================== -->
+    <main id="group-screen" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 print-full">
+
+        <!-- BARRA SUPERIOR DE NAVEGACIÓN DEL GRUPO -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-soft space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button id="btn-back-to-groups" type="button"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-colors cursor-pointer no-print">
+                        <span>← Volver a todos los grupos</span>
+                    </button>
+
+                    <!-- Selector desplegable rápido entre los 10 grupos -->
+                    <div class="no-print">
+                        <label for="quick-group-switcher" class="sr-only">Cambiar de grupo</label>
+                        <select id="quick-group-switcher"
+                            class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer">
+                            <!-- Opciones generadas por JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botón Principal: + Nuevo Examen -->
+                <button id="btn-new-exam" type="button"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all cursor-pointer no-print">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span id="btn-new-exam-label">+ Nuevo Examen</span>
+                </button>
+            </div>
+
+            <!-- Cabecera visual del grupo activo y botones rápidos del mismo nivel -->
+            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3.5">
+                    <div id="active-group-avatar" class="w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-base shadow-xs shrink-0">
+                        1ºA
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 id="active-group-title" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                                1º ESO A
+                            </h2>
+                            <span id="active-group-stage-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold border">
+                                1º ESO
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Calendario exclusivo e independiente para este grupo · Pulsa sobre cualquier día para añadir un examen
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Botones rápidos de cambio entre grupos del mismo nivel -->
+                <div id="sibling-groups-pills" class="flex flex-wrap items-center gap-1.5 no-print">
+                    <!-- Renderizado por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- MÉTRICAS DEL GRUPO ACTIVO -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 no-print" aria-label="Métricas del grupo">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mes visible</p>
+                    <p id="stat-month-total" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                    <p id="stat-month-label" class="text-xs text-slate-500 mt-1 capitalize">En este mes</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total grupo</p>
+                    <p id="stat-group-all" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Exámenes registrados</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Esta semana</p>
+                    <p id="stat-week-total" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Lunes a domingo actual</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Días sobrecarga</p>
+                    <p id="stat-conflicts-total" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0</p>
+                    <p class="text-xs text-slate-500 mt-1">Días con ≥2 exámenes</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- BARRA DE CONTROL DE PESTAÑAS, FECHA Y FILTROS -->
+        <section class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-soft space-y-4 no-print">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                
+                <!-- Navegación de Mes -->
+                <div id="month-nav-controls" class="flex items-center gap-2">
+                    <div class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                        <button id="btn-prev-month" type="button" class="p-2 rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-xs transition-all cursor-pointer" title="Mes anterior" aria-label="Mes anterior">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button id="btn-today" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-white hover:text-indigo-600 hover:shadow-xs transition-all cursor-pointer">
+                            Hoy
+                        </button>
+                        <button id="btn-next-month" type="button" class="p-2 rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-xs transition-all cursor-pointer" title="Mes siguiente" aria-label="Mes siguiente">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <h3 id="current-month-title" class="text-lg sm:text-xl font-extrabold text-slate-900 capitalize ml-1">
+                        Noviembre 2026
+                    </h3>
+                </div>
+
+                <!-- Pestañas de Vista (Calendario Mensual / Agenda Lista) y Exportar -->
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 ml-auto">
+                    <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="tablist">
+                        <button id="view-calendar-btn" type="button" role="tab" aria-selected="true"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-600 shadow-xs transition-all cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span>Calendario Mensual</span>
+                        </button>
+                        <button id="view-list-btn" type="button" role="tab" aria-selected="false"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                            </svg>
+                            <span>Agenda / Lista</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <button id="btn-export-csv" type="button"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+                            title="Exportar exámenes de este grupo a CSV">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span>CSV Grupo</span>
+                        </button>
+                        <button id="btn-print" type="button"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+                            title="Imprimir calendario del grupo">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            </svg>
+                            <span class="hidden sm:inline">Imprimir</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros por Evaluación, Asignatura y Búsqueda -->
+            <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-center">
+                <div class="lg:col-span-5 relative">
+                    <label for="filter-search" class="sr-only">Buscar examen</label>
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" id="filter-search" placeholder="Buscar por asignatura, título/contenidos o profesor..."
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-3 py-2 text-sm text-slate-700 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label for="filter-term" class="sr-only">Filtrar por evaluación</label>
+                    <select id="filter-term" class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-sm text-slate-700 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
+                        <option value="">Todas las evaluaciones</option>
+                        <option value="1ª Evaluación">1ª Evaluación</option>
+                        <option value="2ª Evaluación">2ª Evaluación</option>
+                        <option value="3ª Evaluación">3ª Evaluación</option>
+                        <option value="Final / Recuperación">Final / Recuperación</option>
+                    </select>
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label for="filter-subject" class="sr-only">Filtrar por asignatura</label>
+                    <select id="filter-subject" class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-sm text-slate-700 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
+                        <option value="">Todas las asignaturas</option>
+                    </select>
+                </div>
+
+                <div class="lg:col-span-1 flex justify-end">
+                    <button id="btn-reset-filters" type="button"
+                        class="hidden w-full px-2.5 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                        title="Limpiar filtros">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- PESTAÑA 1: CALENDARIO MENSUAL DEL GRUPO                           -->
+        <!-- ================================================================= -->
+        <section id="calendar-view-container" class="bg-white rounded-2xl border border-slate-200/90 shadow-soft overflow-hidden">
+            <!-- Cabecera Lunes a Domingo -->
+            <div class="grid grid-cols-7 bg-slate-900 text-white text-center py-2.5">
+                <div class="text-xs font-bold uppercase tracking-wider"><span class="hidden sm:inline">Lunes</span><span class="sm:hidden">Lun</span></div>
+                <div class="text-xs font-bold uppercase tracking-wider"><span class="hidden sm:inline">Martes</span><span class="sm:hidden">Mar</span></div>
+                <div class="text-xs font-bold uppercase tracking-wider"><span class="hidden sm:inline">Miércoles</span><span class="sm:hidden">Mié</span></div>
+                <div class="text-xs font-bold uppercase tracking-wider"><span class="hidden sm:inline">Jueves</span><span class="sm:hidden">Jue</span></div>
+                <div class="text-xs font-bold uppercase tracking-wider"><span class="hidden sm:inline">Viernes</span><span class="sm:hidden">Vie</span></div>
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider"><span class="hidden sm:inline">Sábado</span><span class="sm:hidden">Sáb</span></div>
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider"><span class="hidden sm:inline">Domingo</span><span class="sm:hidden">Dom</span></div>
+            </div>
+
+            <!-- Rejilla de días -->
+            <div id="calendar-grid" class="grid grid-cols-7 divide-x divide-y divide-slate-200/80">
+                <!-- Generado dinámicamente por JS -->
+            </div>
+
+            <!-- Leyenda inferior -->
+            <div class="bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                <div id="subject-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <!-- Leyenda de colores por asignatura -->
+                </div>
+                <div class="flex items-center gap-1.5 text-amber-800 font-semibold">
+                    <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold border border-amber-300">!</span>
+                    <span>Aviso de sobrecarga: ≥ 2 exámenes en el mismo día</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- PESTAÑA 2: AGENDA / LISTA CRONOLÓGICA DEL GRUPO                   -->
+        <!-- ================================================================= -->
+        <section id="list-view-container" class="hidden space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-base font-extrabold text-slate-800">
+                    Agenda cronológica de <span id="list-group-name" class="text-indigo-600">este grupo</span>
+                    <span id="list-count-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">0</span>
+                </h3>
+                <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer no-print">
+                    <input id="toggle-past-exams" type="checkbox" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>Mostrar exámenes anteriores a hoy</span>
+                </label>
+            </div>
+
+            <div id="exams-list-content" class="space-y-4">
+                <!-- Listado renderizado por JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: CREAR / EDITAR EXAMEN (NOVALIDATE + VALIDACIÓN EXPLÍCITA JS) -->
+    <!-- ===================================================================== -->
+    <div id="exam-form-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-modal border border-slate-200 overflow-hidden animate-modal my-auto">
+            <!-- Cabecera Modal -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/25 text-indigo-300 flex items-center justify-center border border-indigo-400/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 id="form-modal-title" class="text-base sm:text-lg font-extrabold text-white">Programar Nuevo Examen</h3>
+                        <p id="form-modal-subtitle" class="text-xs text-slate-300">Grupo: 1º ESO A</p>
+                    </div>
+                </div>
+                <button type="button" data-close-modal="exam-form-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Formulario con novalidate y validación controlada en JS -->
+            <form id="exam-form" novalidate class="p-6 space-y-4">
+                <input type="hidden" id="form-exam-id" value="">
+
+                <!-- Banner de errores de validación en pantalla -->
+                <div id="form-validation-error" class="hidden rounded-xl p-3.5 bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold space-y-1">
+                </div>
+
+                <!-- Fila 1: Grupo y Fecha -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="form-group" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Grupo <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="form-group"
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white">
+                            <!-- Opciones de los 10 grupos -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="form-date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Fecha del Examen <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="date" id="form-date"
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    </div>
+                </div>
+
+                <!-- Casilla opcional: Duplicar automáticamente en su grupo paralelo -->
+                <div id="duplicate-group-wrapper" class="rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 space-y-1.5">
+                    <label class="flex items-center gap-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+                        <input type="checkbox" id="form-duplicate-check" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                        <span id="duplicate-label-text">Duplicar también en su grupo paralelo (1º ESO B)</span>
+                    </label>
+                    <p id="duplicate-conflict-hint" class="hidden text-[11px] pl-6"></p>
+                </div>
+
+                <!-- Alerta en tiempo real si el grupo ya tiene otro examen ese día -->
+                <div id="conflict-detector-box" class="rounded-xl p-3.5 border text-xs transition-all">
+                </div>
+
+                <!-- Fila 2: Asignatura / Ámbito y Hora / Sesión -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="form-subject-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Asignatura / Ámbito <span class="text-rose-500">*</span>
+                        </label>
+                        <select id="form-subject-select"
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white">
+                            <!-- Opciones pobladas por JS -->
+                        </select>
+                        <input type="text" id="form-subject-custom" placeholder="Escribe el nombre de la asignatura..."
+                            class="hidden mt-2 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    </div>
+
+                    <div>
+                        <label for="form-session" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Hora / Sesión
+                        </label>
+                        <select id="form-session"
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white">
+                            <option value="1ª hora">1ª hora</option>
+                            <option value="2ª hora">2ª hora</option>
+                            <option value="3ª hora">3ª hora</option>
+                            <option value="4ª hora">4ª hora</option>
+                            <option value="5ª hora">5ª hora</option>
+                            <option value="6ª hora">6ª hora</option>
+                            <option value="Por determinar">Por determinar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fila 3: Título / Contenidos -->
+                <div>
+                    <label for="form-title" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Título / Contenidos <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="form-title" placeholder="Ej. Tema 3 y 4: Ecuaciones y sistemas de ecuaciones"
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                </div>
+
+                <!-- Fila 4: Evaluación, Tipo de prueba y Profesor/a -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="form-term" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Evaluación
+                        </label>
+                        <select id="form-term"
+                            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white">
+                            <option value="1ª Evaluación">1ª Evaluación</option>
+                            <option value="2ª Evaluación">2ª Evaluación</option>
+                            <option value="3ª Evaluación">3ª Evaluación</option>
+                            <option value="Final / Recuperación">Final / Recuperación</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="form-type" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Tipo de prueba
+                        </label>
+                        <select id="form-type"
+                            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white">
+                            <option value="Examen escrito">Examen escrito</option>
+                            <option value="Parcial">Parcial</option>
+                            <option value="Recuperación">Recuperación</option>
+                            <option value="Exposición oral">Exposición oral</option>
+                            <option value="Prueba práctica">Prueba práctica</option>
+                            <option value="Control de lectura">Control de lectura</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="form-teacher" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Profesor/a <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text" id="form-teacher" placeholder="Nombre del docente"
+                            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    </div>
+                </div>
+
+                <!-- Fila 5: Observaciones -->
+                <div>
+                    <label for="form-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Observaciones (opcional)
+                    </label>
+                    <textarea id="form-notes" rows="2" placeholder="Ej. Aula de informática, traer calculadora científica o diccionario..."
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button type="button" data-close-modal="exam-form-modal"
+                        class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btn-submit-exam"
+                        class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all cursor-pointer">
+                        Guardar examen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 2: FICHA DETALLADA DEL EXAMEN                                   -->
+    <!-- ===================================================================== -->
+    <div id="exam-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-modal border border-slate-200 overflow-hidden animate-modal my-auto">
+            <div id="detail-header" class="px-6 py-5 border-b border-slate-200/80 flex items-start justify-between gap-3">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span id="detail-group-badge" class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-slate-900 text-white shadow-2xs">
+                            1º ESO A
+                        </span>
+                        <span id="detail-term-badge" class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-white/90 text-slate-800 border border-slate-200/80">
+                            1ª Evaluación
+                        </span>
+                        <span id="detail-type-badge" class="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-900/10 text-slate-800">
+                            Examen escrito
+                        </span>
+                    </div>
+                    <h3 id="detail-subject" class="text-xl font-extrabold text-slate-900">Matemáticas</h3>
+                    <p id="detail-title" class="text-sm font-semibold text-slate-700 mt-0.5">Tema 1</p>
+                </div>
+                <button type="button" data-close-modal="exam-detail-modal" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-black/5 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500">Fecha</p>
+                        <p id="detail-date" class="font-bold text-slate-900 mt-0.5 capitalize">—</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500">Hora / Sesión</p>
+                        <p id="detail-session" class="font-bold text-slate-900 mt-0.5">—</p>
+                    </div>
+                    <div class="col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500">Profesor/a responsable</p>
+                        <p id="detail-teacher" class="font-bold text-slate-900 mt-0.5">—</p>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observaciones</p>
+                    <div id="detail-notes" class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 whitespace-pre-line">
+                        Sin observaciones adicionales.
+                    </div>
+                </div>
+
+                <div id="detail-coincidences" class="hidden rounded-xl p-3.5 bg-amber-50 border border-amber-200 text-xs text-amber-950 space-y-1">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button type="button" id="btn-detail-delete"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        <span>Eliminar</span>
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" data-close-modal="exam-detail-modal"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors cursor-pointer">
+                            Cerrar
+                        </button>
+                        <button type="button" id="btn-detail-edit"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                            <span>Editar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 3: CONFIRMACIÓN DE ELIMINACIÓN                                  -->
+    <!-- ===================================================================== -->
+    <div id="delete-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-slate-200 animate-modal space-y-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">¿Eliminar este examen?</h3>
+                    <p id="delete-exam-summary" class="text-sm text-slate-600 mt-1">
+                        Esta acción eliminará el examen de forma permanente.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2">
+                <button type="button" data-close-modal="delete-confirm-modal"
+                    class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-confirm-delete"
+                    class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition-colors cursor-pointer">
+                    Sí, eliminar examen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 4: PERFIL DEL PROFESOR/A                                        -->
+    <!-- ===================================================================== -->
+    <div id="teacher-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-slate-200 animate-modal space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">Identificación Docente</h3>
+                    <p class="text-xs text-slate-500">Se recordará automáticamente al apuntar tus exámenes</p>
+                </div>
+                <button type="button" data-close-modal="teacher-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="teacher-form" novalidate class="space-y-4">
+                <div>
+                    <label for="teacher-name-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Nombre y Apellidos del Profesor/a
+                    </label>
+                    <input type="text" id="teacher-name-input" placeholder="Ej. Prof. Laura Gómez"
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2">
+                    <button type="button" data-close-modal="teacher-modal"
+                        class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200/80 transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer">
+                        Guardar nombre
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+    <!-- ===================================================================== -->
+    <!-- ARQUITECTURA DE PERSISTENCIA HÍBRIDA (OPTIMISTIC UI + LOCAL + CLOUD)  -->
+    <!-- ===================================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // 1. CONSTANTES DE ALMACENAMIENTO, GRUPOS DEL IES Y ASIGNATURAS
+        // =========================================================================
+        const LOCAL_STORAGE_EXAMS_KEY = "ies_calendario_examenes_v2";
+        const LOCAL_STORAGE_TEACHER_KEY = "ies_calendario_docente_v2";
+
+        const IES_GROUPS = [
+            {
+                id: "1º ESO A",
+                short: "1ºA",
+                levelGroup: "1º ESO",
+                stage: "1º ESO",
+                parallel: "1º ESO B",
+                theme: {
+                    cardBorder: "border-sky-200 hover:border-sky-400",
+                    accentBar: "bg-sky-600",
+                    badge: "bg-sky-50 text-sky-800 border-sky-200",
+                    avatar: "bg-sky-600 text-white"
+                }
+            },
+            {
+                id: "1º ESO B",
+                short: "1ºB",
+                levelGroup: "1º ESO",
+                stage: "1º ESO",
+                parallel: "1º ESO A",
+                theme: {
+                    cardBorder: "border-sky-200 hover:border-sky-400",
+                    accentBar: "bg-sky-600",
+                    badge: "bg-sky-50 text-sky-800 border-sky-200",
+                    avatar: "bg-sky-700 text-white"
+                }
+            },
+            {
+                id: "2º ESO A",
+                short: "2ºA",
+                levelGroup: "2º ESO",
+                stage: "2º ESO",
+                parallel: "2º ESO B",
+                theme: {
+                    cardBorder: "border-emerald-200 hover:border-emerald-400",
+                    accentBar: "bg-emerald-600",
+                    badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
+                    avatar: "bg-emerald-600 text-white"
+                }
+            },
+            {
+                id: "2º ESO B",
+                short: "2ºB",
+                levelGroup: "2º ESO",
+                stage: "2º ESO",
+                parallel: "2º ESO A",
+                theme: {
+                    cardBorder: "border-emerald-200 hover:border-emerald-400",
+                    accentBar: "bg-emerald-600",
+                    badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
+                    avatar: "bg-emerald-700 text-white"
+                }
+            },
+            {
+                id: "3º ESO A",
+                short: "3ºA",
+                levelGroup: "3º ESO y Diversificación",
+                stage: "3º ESO",
+                parallel: "3º ESO B",
+                theme: {
+                    cardBorder: "border-violet-200 hover:border-violet-400",
+                    accentBar: "bg-violet-600",
+                    badge: "bg-violet-50 text-violet-800 border-violet-200",
+                    avatar: "bg-violet-600 text-white"
+                }
+            },
+            {
+                id: "3º ESO B",
+                short: "3ºB",
+                levelGroup: "3º ESO y Diversificación",
+                stage: "3º ESO",
+                parallel: "3º ESO A",
+                theme: {
+                    cardBorder: "border-violet-200 hover:border-violet-400",
+                    accentBar: "bg-violet-600",
+                    badge: "bg-violet-50 text-violet-800 border-violet-200",
+                    avatar: "bg-violet-700 text-white"
+                }
+            },
+            {
+                id: "3º DIVER",
+                short: "3ºD",
+                levelGroup: "3º ESO y Diversificación",
+                stage: "Diversificación · 3º",
+                parallel: null,
+                theme: {
+                    cardBorder: "border-amber-200 hover:border-amber-400",
+                    accentBar: "bg-amber-600",
+                    badge: "bg-amber-50 text-amber-800 border-amber-200",
+                    avatar: "bg-amber-600 text-white"
+                }
+            },
+            {
+                id: "4º ESO A",
+                short: "4ºA",
+                levelGroup: "4º ESO y Diversificación",
+                stage: "4º ESO",
+                parallel: "4º ESO B",
+                theme: {
+                    cardBorder: "border-indigo-200 hover:border-indigo-400",
+                    accentBar: "bg-indigo-600",
+                    badge: "bg-indigo-50 text-indigo-800 border-indigo-200",
+                    avatar: "bg-indigo-600 text-white"
+                }
+            },
+            {
+                id: "4º ESO B",
+                short: "4ºB",
+                levelGroup: "4º ESO y Diversificación",
+                stage: "4º ESO",
+                parallel: "4º ESO A",
+                theme: {
+                    cardBorder: "border-indigo-200 hover:border-indigo-400",
+                    accentBar: "bg-indigo-600",
+                    badge: "bg-indigo-50 text-indigo-800 border-indigo-200",
+                    avatar: "bg-indigo-700 text-white"
+                }
+            },
+            {
+                id: "4º DIVER",
+                short: "4ºD",
+                levelGroup: "4º ESO y Diversificación",
+                stage: "Diversificación · 4º",
+                parallel: null,
+                theme: {
+                    cardBorder: "border-rose-200 hover:border-rose-400",
+                    accentBar: "bg-rose-600",
+                    badge: "bg-rose-50 text-rose-800 border-rose-200",
+                    avatar: "bg-rose-600 text-white"
+                }
+            }
+        ];
+
+        const SUBJECT_STYLES = {
+            "Ámbito Científico-Tecnológico (ACT)": {
+                pill: "bg-teal-50 text-teal-900 border-teal-200 hover:bg-teal-100/80",
+                dot: "bg-teal-600",
+                header: "bg-teal-50 border-teal-200"
+            },
+            "Ámbito Lingüístico y Social (ALS)": {
+                pill: "bg-orange-50 text-orange-900 border-orange-200 hover:bg-orange-100/80",
+                dot: "bg-orange-600",
+                header: "bg-orange-50 border-orange-200"
+            },
+            "Lengua Castellana y Literatura": {
+                pill: "bg-rose-50 text-rose-900 border-rose-200 hover:bg-rose-100/80",
+                dot: "bg-rose-600",
+                header: "bg-rose-50 border-rose-200"
+            },
+            "Matemáticas": {
+                pill: "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100/80",
+                dot: "bg-blue-600",
+                header: "bg-blue-50 border-blue-200"
+            },
+            "Geografía e Historia": {
+                pill: "bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100/80",
+                dot: "bg-amber-600",
+                header: "bg-amber-50 border-amber-200"
+            },
+            "Inglés": {
+                pill: "bg-violet-50 text-violet-900 border-violet-200 hover:bg-violet-100/80",
+                dot: "bg-violet-600",
+                header: "bg-violet-50 border-violet-200"
+            },
+            "Biología y Geología": {
+                pill: "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100/80",
+                dot: "bg-emerald-600",
+                header: "bg-emerald-50 border-emerald-200"
+            },
+            "Física y Química": {
+                pill: "bg-cyan-50 text-cyan-900 border-cyan-200 hover:bg-cyan-100/80",
+                dot: "bg-cyan-600",
+                header: "bg-cyan-50 border-cyan-200"
+            },
+            "Tecnología y Digitalización": {
+                pill: "bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100/80",
+                dot: "bg-indigo-600",
+                header: "bg-indigo-50 border-indigo-200"
+            },
+            "Educación Física": {
+                pill: "bg-lime-50 text-lime-900 border-lime-200 hover:bg-lime-100/80",
+                dot: "bg-lime-600",
+                header: "bg-lime-50 border-lime-200"
+            },
+            "Música": {
+                pill: "bg-fuchsia-50 text-fuchsia-900 border-fuchsia-200 hover:bg-fuchsia-100/80",
+                dot: "bg-fuchsia-600",
+                header: "bg-fuchsia-50 border-fuchsia-200"
+            },
+            "Educación Plástica, Visual y Audiovisual": {
+                pill: "bg-pink-50 text-pink-900 border-pink-200 hover:bg-pink-100/80",
+                dot: "bg-pink-600",
+                header: "bg-pink-50 border-pink-200"
+            },
+            "Francés": {
+                pill: "bg-sky-50 text-sky-900 border-sky-200 hover:bg-sky-100/80",
+                dot: "bg-sky-600",
+                header: "bg-sky-50 border-sky-200"
+            },
+            "Valores / Filosofía": {
+                pill: "bg-stone-100 text-stone-900 border-stone-300 hover:bg-stone-200/80",
+                dot: "bg-stone-600",
+                header: "bg-stone-100 border-stone-200"
+            },
+            "Economía": {
+                pill: "bg-yellow-50 text-yellow-900 border-yellow-300 hover:bg-yellow-100/80",
+                dot: "bg-yellow-600",
+                header: "bg-yellow-50 border-yellow-200"
+            },
+            "Latín": {
+                pill: "bg-red-50 text-red-900 border-red-200 hover:bg-red-100/80",
+                dot: "bg-red-600",
+                header: "bg-red-50 border-red-200"
+            },
+            "Otra": {
+                pill: "bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200/80",
+                dot: "bg-slate-600",
+                header: "bg-slate-100 border-slate-200"
+            }
+        };
+
+        const MONTH_NAMES_ES = [
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ];
+
+        const WEEKDAY_NAMES_ES = [
+            "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"
+        ];
+
+        // =========================================================================
+        // 2. ESTADO GLOBAL Y RESILIENCIA DE ALMACENAMIENTO LOCAL
+        // =========================================================================
+        const todayObj = new Date();
+        let exams = []; // Array global maestro en memoria
+        const deletedIdsThisSession = new Set();
+
+        let firebaseDb = null;
+        let firebaseAuth = null;
+        let firebaseUser = null;
+        let appId = "default-app-id";
+        let unsubscribeSnapshot = null;
+
+        const state = {
+            currentGroup: null, // null = Pantalla Inicial | string = Grupo seleccionado
+            currentYear: todayObj.getFullYear(),
+            currentMonth: todayObj.getMonth(), // 0 - 11
+            viewMode: "calendar", // "calendar" | "list"
+            showPastInList: true,
+            teacherName: "",
+            selectedExamId: null,
+            filters: {
+                search: "",
+                term: "",
+                subject: ""
+            }
+        };
+
+        // Helpers seguros para localStorage (resisten iframes con sandbox estricto)
+        function safeGetLocalStorage(key) {
+            try {
+                return window.localStorage.getItem(key);
+            } catch (err) {
+                console.warn("Acceso a localStorage restringido por el navegador:", err);
+                return null;
+            }
+        }
+
+        function safeSetLocalStorage(key, value) {
+            try {
+                window.localStorage.setItem(key, value);
+            } catch (err) {
+                console.warn("No se pudo escribir en localStorage:", err);
+            }
+        }
+
+        function persistExamsLocally() {
+            safeSetLocalStorage(LOCAL_STORAGE_EXAMS_KEY, JSON.stringify(exams));
+        }
+
+        function normalizeExam(raw) {
+            const groupVal = raw.group || raw.course || "1º ESO A";
+            return {
+                id: String(raw.id || ("exam-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7))),
+                group: groupVal,
+                course: groupVal,
+                date: String(raw.date || formatDateISO(todayObj)),
+                session: String(raw.session || "1ª hora"),
+                subject: String(raw.subject || "Otra"),
+                title: String(raw.title || raw.notes || raw.type || "Prueba evaluable"),
+                term: String(raw.term || "1ª Evaluación"),
+                type: String(raw.type || "Examen escrito"),
+                teacher: String(raw.teacher || "Profesorado IES"),
+                notes: String(raw.notes || ""),
+                updatedAt: raw.updatedAt || new Date().toISOString()
+            };
+        }
+
+        function buildInitialDemoExams() {
+            const y = todayObj.getFullYear();
+            const m = String(todayObj.getMonth() + 1).padStart(2, "0");
+            return [
+                normalizeExam({
+                    id: "seed-1",
+                    group: "1º ESO A",
+                    date: `${y}-${m}-18`,
+                    session: "1ª hora",
+                    subject: "Matemáticas",
+                    title: "Tema 1 y 2: Números naturales y potencias",
+                    term: "1ª Evaluación",
+                    type: "Examen escrito",
+                    teacher: "Prof. Carlos Mendoza",
+                    notes: "Traer regla y bolígrafo azul o negro."
+                }),
+                normalizeExam({
+                    id: "seed-2",
+                    group: "1º ESO A",
+                    date: `${y}-${m}-18`,
+                    session: "4ª hora",
+                    subject: "Geografía e Historia",
+                    title: "La Tierra y el relieve terrestre",
+                    term: "1ª Evaluación",
+                    type: "Parcial",
+                    teacher: "Prof. Elena Navarro",
+                    notes: "Incluye mapa físico mudo."
+                }),
+                normalizeExam({
+                    id: "seed-3",
+                    group: "1º ESO B",
+                    date: `${y}-${m}-19`,
+                    session: "2ª hora",
+                    subject: "Matemáticas",
+                    title: "Tema 1 y 2: Números naturales y potencias",
+                    term: "1ª Evaluación",
+                    type: "Examen escrito",
+                    teacher: "Prof. Carlos Mendoza",
+                    notes: ""
+                }),
+                normalizeExam({
+                    id: "seed-4",
+                    group: "3º DIVER",
+                    date: `${y}-${m}-20`,
+                    session: "2ª hora",
+                    subject: "Ámbito Científico-Tecnológico (ACT)",
+                    title: "Magnitudes, unidades y resolución de problemas",
+                    term: "1ª Evaluación",
+                    type: "Prueba práctica",
+                    teacher: "Prof. Javier Ruiz",
+                    notes: "Se permite calculadora básica."
+                }),
+                normalizeExam({
+                    id: "seed-5",
+                    group: "3º DIVER",
+                    date: `${y}-${m}-24`,
+                    session: "3ª hora",
+                    subject: "Ámbito Lingüístico y Social (ALS)",
+                    title: "Comprensión lectora y Edad Moderna",
+                    term: "1ª Evaluación",
+                    type: "Examen escrito",
+                    teacher: "Prof. Laura Gómez",
+                    notes: ""
+                }),
+                normalizeExam({
+                    id: "seed-6",
+                    group: "4º ESO A",
+                    date: `${y}-${m}-25`,
+                    session: "1ª hora",
+                    subject: "Física y Química",
+                    title: "Formulación inorgánica y enlace químico",
+                    term: "1ª Evaluación",
+                    type: "Examen escrito",
+                    teacher: "Prof. Javier Ruiz",
+                    notes: "Tabla periódica facilitada por el departamento."
+                }),
+                normalizeExam({
+                    id: "seed-7",
+                    group: "4º DIVER",
+                    date: `${y}-${m}-26`,
+                    session: "5ª hora",
+                    subject: "Inglés",
+                    title: "Presentación oral: Proyectos y rutinas",
+                    term: "1ª Evaluación",
+                    type: "Exposición oral",
+                    teacher: "Prof. Sofía Martín",
+                    notes: "Duración aproximada 3 minutos por alumno/a."
+                })
+            ];
+        }
+
+        function loadInitialLocalState() {
+            // Cargar nombre del docente
+            const savedTeacher = safeGetLocalStorage(LOCAL_STORAGE_TEACHER_KEY);
+            if (savedTeacher) {
+                state.teacherName = savedTeacher;
+            }
+
+            // Cargar exámenes guardados en localStorage
+            const rawStored = safeGetLocalStorage(LOCAL_STORAGE_EXAMS_KEY);
+            if (rawStored !== null) {
+                try {
+                    const parsed = JSON.parse(rawStored);
+                    if (Array.isArray(parsed)) {
+                        exams = parsed.map(normalizeExam);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Error leyendo respaldo local, regenerando:", err);
+                }
+            }
+
+            // Primera ejecución sin respaldo previo: cargar ejemplos iniciales y guardarlos
+            exams = buildInitialDemoExams();
+            persistExamsLocally();
+        }
+
+        // =========================================================================
+        // 3. SINCRONIZACIÓN EN LA NUBE (FIREBASE FIRESTORE EN SEGUNDO PLANO)
+        // =========================================================================
+        function updatePersistenceBadge(mode) {
+            const badge = document.getElementById("persistence-badge");
+            if (!badge) return;
+
+            if (mode === "cloud") {
+                badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30";
+                badge.textContent = "☁️ Sincronizado";
+            } else {
+                badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/20 text-sky-200 border border-sky-400/30";
+                badge.textContent = "💾 Guardado local";
+            }
+        }
+
+        async function initFirebaseBackgroundSync() {
+            updatePersistenceBadge("local");
+
+            if (typeof __firebase_config === "undefined" || !__firebase_config) {
+                return;
+            }
+
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                firebaseAuth = getAuth(app);
+                firebaseDb = getFirestore(app);
+                appId = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
+
+                // 1. Autenticar primero
+                if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+                    await signInWithCustomToken(firebaseAuth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(firebaseAuth);
+                }
+
+                // 2. Confirmar usuario activo mediante onAuthStateChanged antes de suscribir o escribir
+                onAuthStateChanged(firebaseAuth, (user) => {
+                    if (!user) return;
+                    firebaseUser = user;
+                    subscribeFirestoreCollection();
+                });
+            } catch (error) {
+                console.warn("Firebase no disponible, operando con guardado local inmediato:", error);
+                updatePersistenceBadge("local");
+            }
+        }
+
+        function subscribeFirestoreCollection() {
+            if (!firebaseDb || !firebaseUser) return;
+            if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+            // Ruta pública compartida solicitada: /artifacts/{appId}/public/data/examenes_ies
+            const colRef = collection(firebaseDb, "artifacts", appId, "public", "data", "examenes_ies");
+
+            unsubscribeSnapshot = onSnapshot(
+                colRef,
+                (snapshot) => {
+                    updatePersistenceBadge("cloud");
+
+                    // Si Firestore aún está vacío, conservar datos locales sin sobrescribirlos con vacío
+                    if (snapshot.empty) {
+                        return;
+                    }
+
+                    const cloudMap = new Map();
+                    snapshot.forEach((docSnap) => {
+                        if (!deletedIdsThisSession.has(docSnap.id)) {
+                            cloudMap.set(docSnap.id, normalizeExam({ id: docSnap.id, ...docSnap.data() }));
+                        }
+                    });
+
+                    // Fusionar datos de la nube con cualquier examen local pendiente de subir
+                    const mergedMap = new Map();
+                    exams.forEach((localExam) => {
+                        if (!deletedIdsThisSession.has(localExam.id)) {
+                            mergedMap.set(localExam.id, localExam);
+                        }
+                    });
+                    cloudMap.forEach((cloudExam, id) => {
+                        mergedMap.set(id, cloudExam);
+                    });
+
+                    exams = Array.from(mergedMap.values());
+                    persistExamsLocally();
+                    renderAll();
+                },
+                (err) => {
+                    console.warn("Error de permisos/red en Firestore, manteniendo respaldo local:", err);
+                    updatePersistenceBadge("local");
+                }
+            );
+        }
+
+        async function syncExamUpsertToCloud(examObj) {
+            if (!firebaseDb || !firebaseUser) {
+                updatePersistenceBadge("local");
+                return;
+            }
+            try {
+                const docRef = doc(firebaseDb, "artifacts", appId, "public", "data", "examenes_ies", examObj.id);
+                await setDoc(docRef, {
+                    ...examObj,
+                    syncedByUid: firebaseUser.uid,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                updatePersistenceBadge("cloud");
+            } catch (err) {
+                console.warn("No se pudo sincronizar el examen con la nube (guardado local OK):", err);
+                updatePersistenceBadge("local");
+            }
+        }
+
+        async function syncExamDeleteToCloud(examId) {
+            if (!firebaseDb || !firebaseUser) {
+                updatePersistenceBadge("local");
+                return;
+            }
+            try {
+                const docRef = doc(firebaseDb, "artifacts", appId, "public", "data", "examenes_ies", examId);
+                await deleteDoc(docRef);
+                updatePersistenceBadge("cloud");
+            } catch (err) {
+                console.warn("No se pudo eliminar en la nube (eliminado localmente OK):", err);
+                updatePersistenceBadge("local");
+            }
+        }
+
+        // =========================================================================
+        // 4. UTILIDADES DE FECHA, ESTILOS Y ORDENACIÓN
+        // =========================================================================
+        function formatDateISO(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const d = String(dateObj.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function parseLocalDate(isoString) {
+            const [y, m, d] = isoString.split("-").map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function formatSpanishLongDate(isoString) {
+            const date = parseLocalDate(isoString);
+            const weekday = WEEKDAY_NAMES_ES[date.getDay()];
+            const day = date.getDate();
+            const month = MONTH_NAMES_ES[date.getMonth()];
+            const year = date.getFullYear();
+            return `${weekday}, ${day} de ${month} de ${year}`;
+        }
+
+        function formatSpanishShortDate(isoString) {
+            const date = parseLocalDate(isoString);
+            const day = date.getDate();
+            const monthShort = MONTH_NAMES_ES[date.getMonth()].slice(0, 3);
+            return `${day} ${monthShort}`;
+        }
+
+        function getCurrentWeekBoundsISO() {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+            const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+            return {
+                monStr: formatDateISO(monday),
+                sunStr: formatDateISO(sunday)
+            };
+        }
+
+        function getGroupMeta(groupId) {
+            return IES_GROUPS.find(g => g.id === groupId) || IES_GROUPS[0];
+        }
+
+        function getSubjectStyle(subject) {
+            return SUBJECT_STYLES[subject] || SUBJECT_STYLES["Otra"];
+        }
+
+        function getSessionOrder(sessionStr) {
+            if (!sessionStr) return 99;
+            const match = sessionStr.match(/^(\d)/);
+            return match ? parseInt(match[1], 10) : 50;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getSortedExams(list) {
+            return [...list].sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return getSessionOrder(a.session) - getSessionOrder(b.session);
+            });
+        }
+
+        function getGroupExams(groupId) {
+            return getSortedExams(exams.filter(e => e.group === groupId));
+        }
+
+        function computeGroupDailyMap(groupId) {
+            const map = {};
+            getGroupExams(groupId).forEach(exam => {
+                if (!map[exam.date]) map[exam.date] = [];
+                map[exam.date].push(exam);
+            });
+            return map;
+        }
+
+        function getFilteredCurrentGroupExams() {
+            if (!state.currentGroup) return [];
+            const searchLower = state.filters.search.trim().toLowerCase();
+
+            return getGroupExams(state.currentGroup).filter(exam => {
+                if (state.filters.term && exam.term !== state.filters.term) return false;
+                if (state.filters.subject && exam.subject !== state.filters.subject) return false;
+                if (searchLower) {
+                    const text = `${exam.subject} ${exam.title} ${exam.teacher} ${exam.notes || ""} ${exam.type || ""}`.toLowerCase();
+                    if (!text.includes(searchLower)) return false;
+                }
+                return true;
+            });
+        }
+
+        // =========================================================================
+        // 5. DETECTOR DE COINCIDENCIAS EN TIEMPO REAL DENTRO DEL MODAL
+        // =========================================================================
+        function evaluateModalConflicts() {
+            const selectedGroup = document.getElementById("form-group").value;
+            const dateVal = document.getElementById("form-date").value;
+            const sessionVal = document.getElementById("form-session").value;
+            const editingId = document.getElementById("form-exam-id").value;
+            const box = document.getElementById("conflict-detector-box");
+
+            // Actualizar etiqueta de grupo paralelo
+            const groupMeta = getGroupMeta(selectedGroup);
+            const dupWrapper = document.getElementById("duplicate-group-wrapper");
+            const dupLabel = document.getElementById("duplicate-label-text");
+            const dupCheck = document.getElementById("form-duplicate-check");
+            const dupHint = document.getElementById("duplicate-conflict-hint");
+
+            if (!editingId && groupMeta.parallel) {
+                dupWrapper.classList.remove("hidden");
+                dupLabel.textContent = `Duplicar también automáticamente en su grupo paralelo (${groupMeta.parallel})`;
+                if (dupCheck.checked && dateVal) {
+                    const parallelExisting = getGroupExams(groupMeta.parallel).filter(e => e.date === dateVal);
+                    dupHint.classList.remove("hidden");
+                    if (parallelExisting.length === 0) {
+                        dupHint.className = "text-[11px] text-emerald-700 font-semibold pl-6";
+                        dupHint.textContent = `✓ ${groupMeta.parallel} no tiene otros exámenes ese día.`;
+                    } else {
+                        dupHint.className = "text-[11px] text-amber-700 font-semibold pl-6";
+                        dupHint.textContent = `⚠️ Aviso: ${groupMeta.parallel} ya tiene ${parallelExisting.length} examen(es) ese día (${parallelExisting.map(e => e.subject).join(", ")}).`;
+                    }
+                } else {
+                    dupHint.classList.add("hidden");
+                }
+            } else {
+                dupWrapper.classList.add("hidden");
+                dupCheck.checked = false;
+            }
+
+            if (!selectedGroup || !dateVal) {
+                box.className = "rounded-xl p-3.5 border border-slate-200 bg-slate-50 text-slate-600 text-xs";
+                box.innerHTML = `Selecciona una <strong>fecha</strong> para verificar si <strong>${escapeHTML(selectedGroup)}</strong> tiene otros exámenes ese día.`;
+                return;
+            }
+
+            const sameDayExams = getGroupExams(selectedGroup).filter(e => {
+                if (editingId && e.id === editingId) return false;
+                return e.date === dateVal;
+            });
+
+            if (sameDayExams.length === 0) {
+                box.className = "rounded-xl p-3.5 border border-emerald-200 bg-emerald-50/80 text-emerald-950 text-xs flex items-center gap-2";
+                box.innerHTML = `
+                    <span class="font-extrabold text-emerald-700">✓</span>
+                    <span><strong>Día libre en ${escapeHTML(selectedGroup)}:</strong> No hay ningún otro examen apuntado en esta fecha.</span>
+                `;
+            } else {
+                const sameSession = sameDayExams.some(e => e.session === sessionVal && sessionVal !== "Por determinar");
+                const isHighLoad = sameDayExams.length >= 2 || sameSession;
+
+                const itemsHtml = sameDayExams.map(e => `
+                    <li class="flex items-center justify-between gap-2 bg-white/90 px-2.5 py-1.5 rounded-lg border ${isHighLoad ? 'border-rose-200' : 'border-amber-200'}">
+                        <span><strong>${escapeHTML(e.subject)}</strong> · ${escapeHTML(e.session)} (${escapeHTML(e.title)})</span>
+                        <span class="text-[11px] opacity-80 shrink-0">${escapeHTML(e.teacher)}</span>
+                    </li>
+                `).join("");
+
+                box.className = `rounded-xl p-3.5 border text-xs space-y-2 ${
+                    isHighLoad
+                        ? "border-rose-300 bg-rose-50 text-rose-950"
+                        : "border-amber-300 bg-amber-50 text-amber-950"
+                }`;
+                box.innerHTML = `
+                    <p class="font-bold">
+                        ${sameSession
+                            ? `⚠️ Conflicto de sesión: ${escapeHTML(selectedGroup)} ya tiene examen a ${escapeHTML(sessionVal)}.`
+                            : `⚠️ Alerta de coincidencia: ${escapeHTML(selectedGroup)} ya tiene ${sameDayExams.length} examen(es) este día.`}
+                    </p>
+                    <ul class="space-y-1">${itemsHtml}</ul>
+                `;
+            }
+        }
+
+        // =========================================================================
+        // 6. RENDERIZADO DE LA APLICACIÓN (INICIO Y CALENDARIO DE GRUPO)
+        // =========================================================================
+        function renderAll() {
+            const teacherLabel = document.getElementById("header-teacher-name");
+            teacherLabel.textContent = state.teacherName ? state.teacherName : "Identificarse (Docente)";
+
+            const homeScreen = document.getElementById("home-screen");
+            const groupScreen = document.getElementById("group-screen");
+
+            if (!state.currentGroup) {
+                homeScreen.classList.remove("hidden");
+                groupScreen.classList.add("hidden");
+                renderHomeDirectory();
+            } else {
+                homeScreen.classList.add("hidden");
+                groupScreen.classList.remove("hidden");
+                renderGroupWorkspace();
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // PANTALLA 1: DIRECTORIO DE LOS 10 GRUPOS INDEPENDIENTES
+        // -------------------------------------------------------------------------
+        function renderHomeDirectory() {
+            const now = new Date();
+            const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+            const todayISO = formatDateISO(now);
+            const { monStr, sunStr } = getCurrentWeekBoundsISO();
+
+            const monthExamsAll = exams.filter(e => e.date.startsWith(currentMonthPrefix));
+            const weekExamsAll = exams.filter(e => e.date >= monStr && e.date <= sunStr);
+
+            let groupsWithOverload = 0;
+            IES_GROUPS.forEach(g => {
+                const dailyMap = computeGroupDailyMap(g.id);
+                if (Object.values(dailyMap).some(list => list.length >= 2)) {
+                    groupsWithOverload++;
+                }
+            });
+
+            document.getElementById("global-stat-month").textContent = monthExamsAll.length;
+            document.getElementById("global-stat-month-name").textContent = `En ${MONTH_NAMES_ES[now.getMonth()]} ${now.getFullYear()}`;
+            document.getElementById("global-stat-total").textContent = exams.length;
+            document.getElementById("global-stat-alerts").textContent = groupsWithOverload;
+            document.getElementById("global-stat-week").textContent = weekExamsAll.length;
+
+            const levels = [
+                "1º ESO",
+                "2º ESO",
+                "3º ESO y Diversificación",
+                "4º ESO y Diversificación"
+            ];
+
+            const container = document.getElementById("groups-directory-container");
+            container.innerHTML = levels.map(levelName => {
+                const groupsInLevel = IES_GROUPS.filter(g => g.levelGroup === levelName);
+
+                const cardsHtml = groupsInLevel.map(group => {
+                    const gExams = getGroupExams(group.id);
+                    const monthCount = gExams.filter(e => e.date.startsWith(currentMonthPrefix)).length;
+                    const totalGroupCount = gExams.length;
+                    const nextExam = gExams.find(e => e.date >= todayISO);
+
+                    const dailyMap = computeGroupDailyMap(group.id);
+                    const overloadDays = Object.entries(dailyMap).filter(([, list]) => list.length >= 2);
+                    const hasSevereOverload = overloadDays.some(([, list]) => list.length >= 3);
+
+                    return `
+                        <button type="button" data-select-group="${escapeHTML(group.id)}"
+                            class="text-left bg-white rounded-2xl border-2 ${group.theme.cardBorder} shadow-soft hover:shadow-md transition-all overflow-hidden flex flex-col justify-between cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            
+                            <div class="h-1.5 w-full ${group.theme.accentBar}"></div>
+
+                            <div class="p-5 flex-1 flex flex-col justify-between space-y-4 w-full">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${group.theme.badge}">
+                                            ${escapeHTML(group.stage)}
+                                        </span>
+                                        <h3 class="text-2xl font-extrabold text-slate-900 mt-1.5 group-hover:text-indigo-600 transition-colors">
+                                            ${escapeHTML(group.id)}
+                                        </h3>
+                                    </div>
+
+                                    ${overloadDays.length > 0 ? `
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-extrabold border shrink-0 ${
+                                            hasSevereOverload
+                                                ? "bg-rose-100 text-rose-900 border-rose-300"
+                                                : "bg-amber-100 text-amber-900 border-amber-300"
+                                        }" title="Días con 2 o más exámenes en ${escapeHTML(group.id)}">
+                                            ⚠️ ${overloadDays.length} ${overloadDays.length === 1 ? 'día' : 'días'} ≥2 ex.
+                                        </span>
+                                    ` : `
+                                        <span class="w-9 h-9 rounded-xl ${group.theme.avatar} flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
+                                            ${escapeHTML(group.short)}
+                                        </span>
+                                    `}
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                        <p class="text-[11px] font-semibold text-slate-500">Mes actual</p>
+                                        <p class="text-lg font-extrabold text-slate-900">${monthCount} <span class="text-xs font-normal text-slate-500">${monthCount === 1 ? 'examen' : 'exámenes'}</span></p>
+                                    </div>
+                                    <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                        <p class="text-[11px] font-semibold text-slate-500">Programados</p>
+                                        <p class="text-lg font-extrabold text-slate-900">${totalGroupCount} <span class="text-xs font-normal text-slate-500">total</span></p>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                                    ${nextExam ? `
+                                        <div class="min-w-0">
+                                            <p class="text-[11px] font-semibold text-slate-400 uppercase">Próximo examen</p>
+                                            <p class="font-bold text-slate-800 truncate mt-0.5">
+                                                <span class="text-indigo-600">${escapeHTML(formatSpanishShortDate(nextExam.date))}</span> · ${escapeHTML(nextExam.subject)}
+                                            </p>
+                                        </div>
+                                    ` : `
+                                        <div>
+                                            <p class="text-[11px] font-semibold text-slate-400 uppercase">Próximo examen</p>
+                                            <p class="font-medium text-slate-500 mt-0.5">Sin exámenes próximos</p>
+                                        </div>
+                                    `}
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-600 transition-colors shrink-0 font-bold">
+                                        →
+                                    </span>
+                                </div>
+                            </div>
+                        </button>
+                    `;
+                }).join("");
+
+                return `
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500">${escapeHTML(levelName)}</h3>
+                            <div class="h-px flex-1 bg-slate-200/80"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${cardsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // -------------------------------------------------------------------------
+        // PANTALLA 2: CALENDARIO INDEPENDIENTE DEL GRUPO SELECCIONADO
+        // -------------------------------------------------------------------------
+        function renderGroupWorkspace() {
+            const groupMeta = getGroupMeta(state.currentGroup);
+
+            document.getElementById("active-group-title").textContent = groupMeta.id;
+            document.getElementById("btn-new-exam-label").textContent = `+ Nuevo Examen en ${groupMeta.id}`;
+            document.getElementById("list-group-name").textContent = groupMeta.id;
+
+            const avatarEl = document.getElementById("active-group-avatar");
+            avatarEl.className = `w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-base shadow-xs shrink-0 ${groupMeta.theme.avatar}`;
+            avatarEl.textContent = groupMeta.short;
+
+            const stageBadge = document.getElementById("active-group-stage-badge");
+            stageBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold border ${groupMeta.theme.badge}`;
+            stageBadge.textContent = groupMeta.stage;
+
+            // Selector rápido
+            document.getElementById("quick-group-switcher").value = groupMeta.id;
+
+            // Botones rápidos entre grupos del mismo nivel
+            const siblings = IES_GROUPS.filter(g => g.levelGroup === groupMeta.levelGroup);
+            document.getElementById("sibling-groups-pills").innerHTML = siblings.map(sib => {
+                const active = sib.id === groupMeta.id;
+                return `
+                    <button type="button" data-select-group="${escapeHTML(sib.id)}"
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            active
+                                ? "bg-slate-900 text-white shadow-2xs"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                        }">
+                        ${escapeHTML(sib.id)}
+                    </button>
+                `;
+            }).join("");
+
+            // Título del mes
+            document.getElementById("current-month-title").textContent = `${MONTH_NAMES_ES[state.currentMonth]} ${state.currentYear}`;
+
+            // Leyenda de asignaturas
+            const legendSubjects = [
+                "Ámbito Científico-Tecnológico (ACT)",
+                "Ámbito Lingüístico y Social (ALS)",
+                "Lengua Castellana y Literatura",
+                "Matemáticas",
+                "Geografía e Historia",
+                "Inglés",
+                "Biología y Geología",
+                "Física y Química"
+            ];
+            document.getElementById("subject-legend").innerHTML = legendSubjects.map(subj => {
+                const st = getSubjectStyle(subj);
+                return `
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full ${st.dot}"></span>
+                        <span>${escapeHTML(subj)}</span>
+                    </span>
+                `;
+            }).join("");
+
+            renderGroupMetrics();
+            renderGroupCalendarGrid();
+            renderGroupAgendaList();
+
+            // Mostrar/ocultar botón limpiar filtros
+            const hasFilters = Boolean(state.filters.search || state.filters.term || state.filters.subject);
+            document.getElementById("btn-reset-filters").classList.toggle("hidden", !hasFilters);
+        }
+
+        function renderGroupMetrics() {
+            const allGroupExams = getGroupExams(state.currentGroup);
+            const monthPrefix = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, "0")}`;
+            const monthExams = allGroupExams.filter(e => e.date.startsWith(monthPrefix));
+
+            document.getElementById("stat-month-total").textContent = monthExams.length;
+            document.getElementById("stat-month-label").textContent = `En ${MONTH_NAMES_ES[state.currentMonth]} ${state.currentYear}`;
+            document.getElementById("stat-group-all").textContent = allGroupExams.length;
+
+            const { monStr, sunStr } = getCurrentWeekBoundsISO();
+            const weekExams = allGroupExams.filter(e => e.date >= monStr && e.date <= sunStr);
+            document.getElementById("stat-week-total").textContent = weekExams.length;
+
+            const dailyMap = computeGroupDailyMap(state.currentGroup);
+            const overloadedDays = Object.entries(dailyMap).filter(([d, list]) => d.startsWith(monthPrefix) && list.length >= 2);
+            document.getElementById("stat-conflicts-total").textContent = overloadedDays.length;
+        }
+
+        function renderGroupCalendarGrid() {
+            const grid = document.getElementById("calendar-grid");
+            const filteredExams = getFilteredCurrentGroupExams();
+            const dailyMapAll = computeGroupDailyMap(state.currentGroup);
+            const todayISO = formatDateISO(new Date());
+
+            const firstDayDate = new Date(state.currentYear, state.currentMonth, 1);
+            const startOffset = (firstDayDate.getDay() + 6) % 7; // Lunes = 0 ... Domingo = 6
+            const daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+            const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+            const examsByDate = {};
+            filteredExams.forEach(exam => {
+                if (!examsByDate[exam.date]) examsByDate[exam.date] = [];
+                examsByDate[exam.date].push(exam);
+            });
+
+            let html = "";
+            for (let idx = 0; idx < totalCells; idx++) {
+                const dayNumber = idx - startOffset + 1;
+                const cellDate = new Date(state.currentYear, state.currentMonth, dayNumber);
+                const cellISO = formatDateISO(cellDate);
+                const isCurrentMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
+                const isToday = cellISO === todayISO;
+                const isWeekend = (idx % 7 === 5) || (idx % 7 === 6);
+
+                const dayExams = examsByDate[cellISO] || [];
+                const totalDayCount = (dailyMapAll[cellISO] || []).length;
+                const isOverloaded = totalDayCount >= 2;
+
+                const cellBg = !isCurrentMonth
+                    ? "bg-slate-50/75 text-slate-400"
+                    : isWeekend
+                        ? "bg-slate-50/40 hover:bg-indigo-50/30"
+                        : "bg-white hover:bg-indigo-50/25";
+
+                html += `
+                    <div data-date="${cellISO}"
+                        class="calendar-cell group relative min-h-[118px] sm:min-h-[142px] p-1.5 sm:p-2 flex flex-col transition-colors cursor-pointer ${cellBg}">
+                        
+                        <div class="flex items-center justify-between gap-1 mb-1.5">
+                            <span class="inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm font-bold ${
+                                isToday
+                                    ? "bg-indigo-600 text-white shadow-xs"
+                                    : isCurrentMonth
+                                        ? "text-slate-700"
+                                        : "text-slate-400"
+                            }">
+                                ${cellDate.getDate()}
+                            </span>
+
+                            <div class="flex items-center gap-1">
+                                ${isOverloaded ? `
+                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300"
+                                        title="Sobrecarga: ${totalDayCount} exámenes en ${escapeHTML(state.currentGroup)}">
+                                        ⚠️ ${totalDayCount} ex.
+                                    </span>
+                                ` : ""}
+                                <button type="button" data-add-date="${cellISO}"
+                                    class="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-all no-print"
+                                    title="Añadir examen el ${cellISO}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1 flex-1 overflow-y-auto max-h-[170px] pr-0.5">
+                            ${dayExams.map(exam => {
+                                const style = getSubjectStyle(exam.subject);
+                                return `
+                                    <button type="button" data-exam-id="${escapeHTML(exam.id)}"
+                                        class="w-full text-left px-2 py-1.5 rounded-lg border text-[11px] leading-tight transition-all shadow-2xs cursor-pointer ${style.pill}">
+                                        <div class="flex items-center justify-between gap-1 font-extrabold">
+                                            <span class="truncate">${escapeHTML(exam.subject)}</span>
+                                            <span class="shrink-0 opacity-85 text-[10px] font-bold">${escapeHTML(exam.session)}</span>
+                                        </div>
+                                        <p class="truncate text-[10px] font-medium mt-0.5 opacity-90">${escapeHTML(exam.title)}</p>
+                                    </button>
+                                `;
+                            }).join("")}
+                        </div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function renderGroupAgendaList() {
+            const container = document.getElementById("exams-list-content");
+            const badge = document.getElementById("list-count-badge");
+            const todayISO = formatDateISO(new Date());
+            const dailyMapAll = computeGroupDailyMap(state.currentGroup);
+
+            let list = getFilteredCurrentGroupExams();
+            if (!state.showPastInList) {
+                list = list.filter(e => e.date >= todayISO);
+            }
+
+            badge.textContent = list.length;
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-10 text-center border border-slate-200/80 shadow-soft">
+                        <h4 class="text-base font-extrabold text-slate-800">No hay exámenes en la agenda de ${escapeHTML(state.currentGroup)}</h4>
+                        <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                            Pulsa en <strong>"+ Nuevo Examen en ${escapeHTML(state.currentGroup)}"</strong> para registrar una prueba evaluable.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const groupedByDate = {};
+            list.forEach(exam => {
+                if (!groupedByDate[exam.date]) groupedByDate[exam.date] = [];
+                groupedByDate[exam.date].push(exam);
+            });
+
+            container.innerHTML = Object.entries(groupedByDate).map(([dateISO, dayExams]) => {
+                const isToday = dateISO === todayISO;
+                const isPast = dateISO < todayISO;
+                const totalToday = (dailyMapAll[dateISO] || []).length;
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-soft overflow-hidden ${isPast ? 'opacity-85' : ''}">
+                        <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-extrabold text-slate-800 capitalize">${escapeHTML(formatSpanishLongDate(dateISO))}</span>
+                                ${isToday ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white uppercase">Hoy</span>` : ""}
+                                ${isPast ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 uppercase">Realizado</span>` : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Próximo</span>`}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${totalToday >= 2 ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">⚠️ ${totalToday} exámenes este día</span>` : ""}
+                                <span class="text-xs font-semibold text-slate-500">${dayExams.length} ${dayExams.length === 1 ? 'prueba' : 'pruebas'}</span>
+                            </div>
+                        </div>
+
+                        <div class="divide-y divide-slate-100">
+                            ${dayExams.map(exam => {
+                                const style = getSubjectStyle(exam.subject);
+                                return `
+                                    <div data-exam-id="${escapeHTML(exam.id)}"
+                                        class="p-4 hover:bg-slate-50/90 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer">
+                                        <div class="flex items-start gap-3">
+                                            <span class="w-3 h-3 rounded-full mt-1.5 shrink-0 ${style.dot}"></span>
+                                            <div class="space-y-1">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <span class="text-sm font-extrabold text-slate-900">${escapeHTML(exam.subject)}</span>
+                                                    <span class="px-2 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                                        ${escapeHTML(exam.term)}
+                                                    </span>
+                                                    <span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                                        ${escapeHTML(exam.type)}
+                                                    </span>
+                                                </div>
+                                                <p class="text-sm font-semibold text-slate-800">${escapeHTML(exam.title)}</p>
+                                                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                                                    <span>🕒 <strong>${escapeHTML(exam.session)}</strong></span>
+                                                    <span>👩‍🏫 ${escapeHTML(exam.teacher)}</span>
+                                                </div>
+                                                ${exam.notes ? `<p class="text-xs text-slate-500 pt-0.5">${escapeHTML(exam.notes)}</p>` : ""}
+                                            </div>
+                                        </div>
+
+                                        <div class="self-end sm:self-center shrink-0 no-print">
+                                            <span class="text-xs font-bold text-indigo-600 hover:underline">Ver ficha →</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join("")}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // =========================================================================
+        // 7. MODALES: CREAR, EDITAR, DETALLE, ELIMINAR Y PERFIL DOCENTE
+        // =========================================================================
+        function populateSelectors() {
+            const groupOptionsHtml = IES_GROUPS.map(g =>
+                `<option value="${escapeHTML(g.id)}">${escapeHTML(g.id)}</option>`
+            ).join("");
+
+            document.getElementById("quick-group-switcher").innerHTML = IES_GROUPS.map(g =>
+                `<option value="${escapeHTML(g.id)}">Grupo: ${escapeHTML(g.id)}</option>`
+            ).join("");
+
+            document.getElementById("form-group").innerHTML = groupOptionsHtml;
+
+            const subjectsList = Object.keys(SUBJECT_STYLES).filter(s => s !== "Otra");
+            document.getElementById("filter-subject").innerHTML =
+                `<option value="">Todas las asignaturas</option>` +
+                subjectsList.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join("");
+
+            document.getElementById("form-subject-select").innerHTML =
+                `<option value="">Selecciona asignatura o ámbito...</option>` +
+                subjectsList.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join("") +
+                `<option value="Otra">Otra (especificar manualmente)</option>`;
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        function hideValidationError() {
+            const errBox = document.getElementById("form-validation-error");
+            errBox.classList.add("hidden");
+            errBox.innerHTML = "";
+        }
+
+        function showValidationError(messages) {
+            const errBox = document.getElementById("form-validation-error");
+            errBox.classList.remove("hidden");
+            errBox.innerHTML = messages.map(m => `<p>• ${escapeHTML(m)}</p>`).join("");
+        }
+
+        function openCreateExamModal(prefillDate = null) {
+            const activeGroup = state.currentGroup || IES_GROUPS[0].id;
+            hideValidationError();
+
+            document.getElementById("form-modal-title").textContent = "Programar Nuevo Examen";
+            document.getElementById("form-modal-subtitle").textContent = `Calendario independiente de ${activeGroup}`;
+            document.getElementById("exam-form").reset();
+            document.getElementById("form-exam-id").value = "";
+            document.getElementById("form-group").value = activeGroup;
+            document.getElementById("form-date").value = prefillDate || formatDateISO(new Date());
+            document.getElementById("form-subject-custom").classList.add("hidden");
+            document.getElementById("form-duplicate-check").checked = false;
+
+            if (state.teacherName) {
+                document.getElementById("form-teacher").value = state.teacherName;
+            }
+
+            evaluateModalConflicts();
+            openModal("exam-form-modal");
+        }
+
+        function openEditExamModal(exam) {
+            closeModal("exam-detail-modal");
+            hideValidationError();
+
+            document.getElementById("form-modal-title").textContent = "Editar Examen";
+            document.getElementById("form-modal-subtitle").textContent = `Editando convocatoria en ${exam.group}`;
+            document.getElementById("form-exam-id").value = exam.id;
+            document.getElementById("form-group").value = exam.group;
+            document.getElementById("form-date").value = exam.date;
+            document.getElementById("form-session").value = exam.session || "1ª hora";
+            document.getElementById("form-title").value = exam.title || "";
+            document.getElementById("form-term").value = exam.term || "1ª Evaluación";
+            document.getElementById("form-type").value = exam.type || "Examen escrito";
+            document.getElementById("form-teacher").value = exam.teacher || "";
+            document.getElementById("form-notes").value = exam.notes || "";
+
+            const subjSelect = document.getElementById("form-subject-select");
+            const subjCustom = document.getElementById("form-subject-custom");
+            const knownSubjects = Object.keys(SUBJECT_STYLES).filter(s => s !== "Otra");
+            if (knownSubjects.includes(exam.subject)) {
+                subjSelect.value = exam.subject;
+                subjCustom.classList.add("hidden");
+                subjCustom.value = "";
+            } else {
+                subjSelect.value = "Otra";
+                subjCustom.classList.remove("hidden");
+                subjCustom.value = exam.subject;
+            }
+
+            evaluateModalConflicts();
+            openModal("exam-form-modal");
+        }
+
+        function openExamDetailModal(examId) {
+            const exam = exams.find(e => e.id === examId);
+            if (!exam) return;
+
+            state.selectedExamId = exam.id;
+            const style = getSubjectStyle(exam.subject);
+
+            const header = document.getElementById("detail-header");
+            header.className = `px-6 py-5 border-b flex items-start justify-between gap-3 ${style.header}`;
+
+            document.getElementById("detail-group-badge").textContent = exam.group;
+            document.getElementById("detail-term-badge").textContent = exam.term;
+            document.getElementById("detail-type-badge").textContent = exam.type;
+            document.getElementById("detail-subject").textContent = exam.subject;
+            document.getElementById("detail-title").textContent = exam.title;
+            document.getElementById("detail-date").textContent = formatSpanishLongDate(exam.date);
+            document.getElementById("detail-session").textContent = exam.session;
+            document.getElementById("detail-teacher").textContent = exam.teacher;
+            document.getElementById("detail-notes").textContent = exam.notes || "Sin observaciones adicionales.";
+
+            const otherSameDay = getGroupExams(exam.group).filter(e => e.id !== exam.id && e.date === exam.date);
+            const coincidencesBox = document.getElementById("detail-coincidences");
+            if (otherSameDay.length > 0) {
+                coincidencesBox.classList.remove("hidden");
+                coincidencesBox.innerHTML = `
+                    <p class="font-bold">⚠️ Coincidencia en ${escapeHTML(exam.group)} este mismo día:</p>
+                    <ul class="list-disc pl-5 pt-0.5 space-y-0.5">
+                        ${otherSameDay.map(o => `<li><strong>${escapeHTML(o.subject)}</strong> (${escapeHTML(o.session)}) — ${escapeHTML(o.title)}</li>`).join("")}
+                    </ul>
+                `;
+            } else {
+                coincidencesBox.classList.add("hidden");
+            }
+
+            openModal("exam-detail-modal");
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+
+            const styles = {
+                success: "bg-emerald-700 text-white border-emerald-600",
+                warning: "bg-amber-600 text-white border-amber-500",
+                error: "bg-rose-600 text-white border-rose-500"
+            };
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-sm font-bold flex items-center justify-between gap-3 animate-modal ${styles[type] || styles.success}`;
+            toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transition = "opacity 0.25s ease";
+                setTimeout(() => toast.remove(), 260);
+            }, 3200);
+        }
+
+        // =========================================================================
+        // 8. EXPORTACIÓN A CSV
+        // =========================================================================
+        function exportExamsCSV(examsList, filename) {
+            if (examsList.length === 0) {
+                showToast("No hay exámenes para exportar.", "warning");
+                return;
+            }
+
+            const headers = ["Grupo", "Fecha", "Hora / Sesión", "Asignatura / Ámbito", "Título / Contenidos", "Evaluación", "Tipo de prueba", "Profesor/a", "Observaciones"];
+            const rows = examsList.map(e => [
+                e.group,
+                e.date,
+                e.session,
+                e.subject,
+                e.title,
+                e.term,
+                e.type,
+                e.teacher,
+                (e.notes || "").replace(/\r?\n|\r/g, " ")
+            ]);
+
+            const csvContent = "\uFEFF" + [headers, ...rows]
+                .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+                .join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast(`Exportados ${examsList.length} exámenes a CSV.`, "success");
+        }
+
+        // =========================================================================
+        // 9. INICIALIZACIÓN DE EVENTOS Y GUARDADO OPTIMISTA INMEDIATO
+        // =========================================================================
+        function selectGroup(groupId) {
+            state.currentGroup = groupId || null;
+            state.filters = { search: "", term: "", subject: "" };
+            document.getElementById("filter-search").value = "";
+            document.getElementById("filter-term").value = "";
+            document.getElementById("filter-subject").value = "";
+            renderAll();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function bindAllEvents() {
+            // Navegación entre Pantalla Inicial y Grupos
+            document.getElementById("brand-home-btn").addEventListener("click", () => selectGroup(null));
+            document.getElementById("btn-back-to-groups").addEventListener("click", () => selectGroup(null));
+
+            document.getElementById("groups-directory-container").addEventListener("click", (e) => {
+                const card = e.target.closest("[data-select-group]");
+                if (card) selectGroup(card.dataset.selectGroup);
+            });
+
+            document.getElementById("quick-group-switcher").addEventListener("change", (e) => {
+                selectGroup(e.target.value);
+            });
+
+            document.getElementById("sibling-groups-pills").addEventListener("click", (e) => {
+                const pill = e.target.closest("[data-select-group]");
+                if (pill) selectGroup(pill.dataset.selectGroup);
+            });
+
+            // Navegación de meses
+            document.getElementById("btn-prev-month").addEventListener("click", () => {
+                state.currentMonth--;
+                if (state.currentMonth < 0) {
+                    state.currentMonth = 11;
+                    state.currentYear--;
+                }
+                renderAll();
+            });
+
+            document.getElementById("btn-next-month").addEventListener("click", () => {
+                state.currentMonth++;
+                if (state.currentMonth > 11) {
+                    state.currentMonth = 0;
+                    state.currentYear++;
+                }
+                renderAll();
+            });
+
+            document.getElementById("btn-today").addEventListener("click", () => {
+                const now = new Date();
+                state.currentYear = now.getFullYear();
+                state.currentMonth = now.getMonth();
+                renderAll();
+            });
+
+            // Pestañas Calendario Mensual / Agenda Lista
+            const btnCal = document.getElementById("view-calendar-btn");
+            const btnList = document.getElementById("view-list-btn");
+            const calContainer = document.getElementById("calendar-view-container");
+            const listContainer = document.getElementById("list-view-container");
+
+            btnCal.addEventListener("click", () => {
+                state.viewMode = "calendar";
+                btnCal.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-600 shadow-xs transition-all cursor-pointer";
+                btnList.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+                calContainer.classList.remove("hidden");
+                listContainer.classList.add("hidden");
+            });
+
+            btnList.addEventListener("click", () => {
+                state.viewMode = "list";
+                btnList.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white text-indigo-600 shadow-xs transition-all cursor-pointer";
+                btnCal.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+                listContainer.classList.remove("hidden");
+                calContainer.classList.add("hidden");
+            });
+
+            document.getElementById("toggle-past-exams").addEventListener("change", (e) => {
+                state.showPastInList = e.target.checked;
+                renderGroupAgendaList();
+            });
+
+            // Exportar CSV e Imprimir
+            document.getElementById("btn-export-global-csv").addEventListener("click", () => {
+                exportExamsCSV(getSortedExams(exams), `calendario_examenes_IES_${todayObj.getFullYear()}.csv`);
+            });
+
+            document.getElementById("btn-export-csv").addEventListener("click", () => {
+                const slug = (state.currentGroup || "grupo").replace(/\s+/g, "_");
+                exportExamsCSV(getFilteredCurrentGroupExams(), `examenes_${slug}.csv`);
+            });
+
+            document.getElementById("btn-print").addEventListener("click", () => window.print());
+
+            // Filtros del grupo
+            document.getElementById("filter-search").addEventListener("input", (e) => {
+                state.filters.search = e.target.value;
+                renderAll();
+            });
+            document.getElementById("filter-term").addEventListener("change", (e) => {
+                state.filters.term = e.target.value;
+                renderAll();
+            });
+            document.getElementById("filter-subject").addEventListener("change", (e) => {
+                state.filters.subject = e.target.value;
+                renderAll();
+            });
+            document.getElementById("btn-reset-filters").addEventListener("click", () => {
+                state.filters = { search: "", term: "", subject: "" };
+                document.getElementById("filter-search").value = "";
+                document.getElementById("filter-term").value = "";
+                document.getElementById("filter-subject").value = "";
+                renderAll();
+            });
+
+            // Botón Nuevo Examen
+            document.getElementById("btn-new-exam").addEventListener("click", () => openCreateExamModal());
+
+            // Clic en celda del calendario o en examen
+            document.getElementById("calendar-grid").addEventListener("click", (e) => {
+                const examBtn = e.target.closest("[data-exam-id]");
+                if (examBtn) {
+                    e.stopPropagation();
+                    openExamDetailModal(examBtn.dataset.examId);
+                    return;
+                }
+                const addBtn = e.target.closest("[data-add-date]");
+                if (addBtn) {
+                    e.stopPropagation();
+                    openCreateExamModal(addBtn.dataset.addDate);
+                    return;
+                }
+                const cell = e.target.closest("[data-date]");
+                if (cell) {
+                    openCreateExamModal(cell.dataset.date);
+                }
+            });
+
+            // Clic en fila de Agenda / Lista
+            document.getElementById("exams-list-content").addEventListener("click", (e) => {
+                const row = e.target.closest("[data-exam-id]");
+                if (row) openExamDetailModal(row.dataset.examId);
+            });
+
+            // Eventos internos del formulario
+            const subjSelect = document.getElementById("form-subject-select");
+            const subjCustom = document.getElementById("form-subject-custom");
+            subjSelect.addEventListener("change", () => {
+                if (subjSelect.value === "Otra") {
+                    subjCustom.classList.remove("hidden");
+                    subjCustom.focus();
+                } else {
+                    subjCustom.classList.add("hidden");
+                }
+            });
+
+            document.getElementById("form-group").addEventListener("change", evaluateModalConflicts);
+            document.getElementById("form-date").addEventListener("change", evaluateModalConflicts);
+            document.getElementById("form-session").addEventListener("change", evaluateModalConflicts);
+            document.getElementById("form-duplicate-check").addEventListener("change", evaluateModalConflicts);
+
+            // =====================================================================
+            // GUARDADO INMEDIATO Y 100% FIABLE (OPTIMISTIC UI + LOCAL + CLOUD)
+            // =====================================================================
+            document.getElementById("exam-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                hideValidationError();
+
+                const existingId = document.getElementById("form-exam-id").value.trim();
+                const groupVal = document.getElementById("form-group").value;
+                const dateVal = document.getElementById("form-date").value.trim();
+                const sessionVal = document.getElementById("form-session").value;
+                const subjChoice = subjSelect.value;
+                const subjectVal = subjChoice === "Otra"
+                    ? (subjCustom.value.trim() || "Otra")
+                    : subjChoice;
+                const titleVal = document.getElementById("form-title").value.trim();
+                const termVal = document.getElementById("form-term").value;
+                const typeVal = document.getElementById("form-type").value;
+                const teacherVal = document.getElementById("form-teacher").value.trim();
+                const notesVal = document.getElementById("form-notes").value.trim();
+
+                // Validación explícita en JavaScript
+                const errors = [];
+                if (!groupVal) errors.push("Selecciona un grupo.");
+                if (!dateVal) errors.push("Indica la fecha del examen.");
+                if (!subjChoice) errors.push("Selecciona una asignatura o ámbito.");
+                if (subjChoice === "Otra" && !subjCustom.value.trim()) {
+                    errors.push("Escribe el nombre de la asignatura en el campo 'Otra'.");
+                }
+                if (!titleVal) errors.push("Escribe el título o contenidos del examen.");
+                if (!teacherVal) errors.push("Indica el nombre del profesor o profesora.");
+
+                if (errors.length > 0) {
+                    showValidationError(errors);
+                    return;
+                }
+
+                // Recordar nombre del profesor/a en localStorage
+                state.teacherName = teacherVal;
+                safeSetLocalStorage(LOCAL_STORAGE_TEACHER_KEY, teacherVal);
+
+                // Construir objeto principal
+                const mainExam = normalizeExam({
+                    id: existingId || ("exam-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7)),
+                    group: groupVal,
+                    date: dateVal,
+                    session: sessionVal,
+                    subject: subjectVal,
+                    title: titleVal,
+                    term: termVal,
+                    type: typeVal,
+                    teacher: teacherVal,
+                    notes: notesVal,
+                    updatedAt: new Date().toISOString()
+                });
+
+                // 1. Actualizar inmediatamente array en memoria
+                if (existingId) {
+                    const idx = exams.findIndex(item => item.id === existingId);
+                    if (idx !== -1) {
+                        exams[idx] = mainExam;
+                    } else {
+                        exams.push(mainExam);
+                    }
+                } else {
+                    exams.push(mainExam);
+                }
+
+                // Comprobar duplicación automática en grupo paralelo (solo al crear)
+                let parallelExam = null;
+                const groupMeta = getGroupMeta(groupVal);
+                const shouldDuplicate = !existingId && document.getElementById("form-duplicate-check").checked && groupMeta.parallel;
+                if (shouldDuplicate) {
+                    parallelExam = normalizeExam({
+                        ...mainExam,
+                        id: "exam-" + (Date.now() + 1) + "-" + Math.random().toString(36).slice(2, 7),
+                        group: groupMeta.parallel
+                    });
+                    exams.push(parallelExam);
+                }
+
+                // 2. Guardar al instante en localStorage
+                persistExamsLocally();
+
+                // 3. Cerrar el modal y navegar el calendario al mes del examen recién guardado
+                closeModal("exam-form-modal");
+                state.currentGroup = groupVal;
+                const [examYear, examMonth] = dateVal.split("-").map(Number);
+                if (examYear && examMonth) {
+                    state.currentYear = examYear;
+                    state.currentMonth = examMonth - 1;
+                }
+
+                // 4. Volver a renderizar la vista actual y mostrar toast verde
+                renderAll();
+                showToast("✓ Examen guardado correctamente", "success");
+
+                // 5. Sincronizar en paralelo con Firestore sin bloquear la interfaz
+                syncExamUpsertToCloud(mainExam);
+                if (parallelExam) {
+                    syncExamUpsertToCloud(parallelExam);
+                }
+            });
+
+            // Acciones Editar y Eliminar desde Ficha Detallada
+            document.getElementById("btn-detail-edit").addEventListener("click", () => {
+                const exam = exams.find(e => e.id === state.selectedExamId);
+                if (exam) openEditExamModal(exam);
+            });
+
+            document.getElementById("btn-detail-delete").addEventListener("click", () => {
+                const exam = exams.find(e => e.id === state.selectedExamId);
+                if (!exam) return;
+                document.getElementById("delete-exam-summary").textContent =
+                    `Vas a eliminar el examen de ${exam.subject} (${exam.title}) en ${exam.group} del ${formatSpanishLongDate(exam.date)}.`;
+                closeModal("exam-detail-modal");
+                openModal("delete-confirm-modal");
+            });
+
+            document.getElementById("btn-confirm-delete").addEventListener("click", () => {
+                if (!state.selectedExamId) return;
+                const idToDelete = state.selectedExamId;
+                deletedIdsThisSession.add(idToDelete);
+
+                // Eliminar inmediatamente en memoria + localStorage
+                exams = exams.filter(e => e.id !== idToDelete);
+                persistExamsLocally();
+                state.selectedExamId = null;
+
+                closeModal("delete-confirm-modal");
+                renderAll();
+                showToast("✓ Examen eliminado correctamente", "success");
+
+                // Eliminar en la nube en segundo plano
+                syncExamDeleteToCloud(idToDelete);
+            });
+
+            // Perfil docente
+            document.getElementById("btn-teacher-profile").addEventListener("click", () => {
+                document.getElementById("teacher-name-input").value = state.teacherName || "";
+                openModal("teacher-modal");
+            });
+
+            document.getElementById("teacher-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                const name = document.getElementById("teacher-name-input").value.trim();
+                state.teacherName = name;
+                safeSetLocalStorage(LOCAL_STORAGE_TEACHER_KEY, name);
+                closeModal("teacher-modal");
+                renderAll();
+                showToast(name ? `✓ Docente identificado: ${name}` : "Nombre docente borrado", "success");
+            });
+
+            // Cierre de modales
+            document.querySelectorAll("[data-close-modal]").forEach(btn => {
+                btn.addEventListener("click", () => closeModal(btn.dataset.closeModal));
+            });
+
+            ["exam-form-modal", "exam-detail-modal", "delete-confirm-modal", "teacher-modal"].forEach(modalId => {
+                const overlay = document.getElementById(modalId);
+                overlay.addEventListener("click", (e) => {
+                    if (e.target === overlay) closeModal(modalId);
+                });
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    ["exam-form-modal", "exam-detail-modal", "delete-confirm-modal", "teacher-modal"].forEach(closeModal);
+                }
+            });
+        }
+
+        // =========================================================================
+        // 10. ARRANQUE INMEDIATO DE LA APLICACIÓN
+        // =========================================================================
+        window.addEventListener("DOMContentLoaded", () => {
+            populateSelectors();
+            loadInitialLocalState();
+            bindAllEvents();
+            renderAll();
+            initFirebaseBackgroundSync();
+        });
+    </script>
+</body>
+</html>
